@@ -17,8 +17,6 @@ from pyVisualCrossing import (
     VisualCrossing,
     VisualCrossingUnauthorized,
     ForecastData,
-    ForecastDailyData,
-    ForecastHourlyData,
 )
 from pyVisualCrossing.const import DATE_FORMAT
 
@@ -30,7 +28,10 @@ load_dotenv()
 api_key = os.getenv("API_KEY")
 latitude = os.getenv("LATITUDE")
 longitude = os.getenv("LONGITUDE")
-data = None
+if api_key is None or latitude is None or longitude is None:
+    raise SystemExit("API_KEY, LATITUDE and LONGITUDE must be set in .env")
+
+data: ForecastData | None = None
 
 print(datetime.datetime.today().strftime(DATE_FORMAT))
 # dato = "2023-09-27"
@@ -44,9 +45,9 @@ print(datetime.datetime.today().strftime(DATE_FORMAT))
 #     print("DO NOT include record")
 
 # Attach to API and fetch data
-vcapi = VisualCrossing(api_key, latitude, longitude, days=1)
+vcapi = VisualCrossing(api_key, float(latitude), float(longitude), days=1)
 try:
-    data: ForecastData = vcapi.fetch_data()
+    data = vcapi.fetch_data()
 except VisualCrossingUnauthorized as erru:
     print(erru)
 
@@ -59,13 +60,11 @@ if data is not None:
     print(" ")
 
     print("***** DAILY DATA *****")
-    item: ForecastDailyData = None
-    for item in data.forecast_daily:
+    for item in data.forecast_daily or []:
         print(item.datetime, item.temperature, item.temp_low, item.icon, item.condition)
 
     print("***** HOURLY DATA *****")
-    item_hour: ForecastHourlyData = None
-    for item_hour in data.forecast_hourly:
+    for item_hour in data.forecast_hourly or []:
         print(
             item_hour.datetime,
             item_hour.temperature,

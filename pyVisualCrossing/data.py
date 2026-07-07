@@ -29,8 +29,8 @@ class ForecastData:
         wind_speed: float,
         location_name: str,
         description: str,
-        forecast_daily: ForecastDailyData = None,
-        forecast_hourly: ForecastHourlyData = None,
+        forecast_daily: list[ForecastDailyData] | None = None,
+        forecast_hourly: list[ForecastHourlyData] | None = None,
     ) -> None:
         """Dataset constructor."""
         self._datetime = datetime
@@ -151,27 +151,27 @@ class ForecastData:
         return self._description
 
     @property
-    def update_time(self) -> datetime:
+    def update_time(self) -> str:
         """Last updated."""
         return datetime.now().isoformat()
 
     @property
-    def forecast_daily(self) -> ForecastDailyData:
+    def forecast_daily(self) -> list[ForecastDailyData] | None:
         """Forecast List."""
         return self._forecast_daily
 
     @forecast_daily.setter
-    def forecast_daily(self, new_forecast):
+    def forecast_daily(self, new_forecast: list[ForecastDailyData]) -> None:
         """Forecast daily new value."""
         self._forecast_daily = new_forecast
 
     @property
-    def forecast_hourly(self) -> ForecastHourlyData:
+    def forecast_hourly(self) -> list[ForecastHourlyData] | None:
         """Forecast List."""
         return self._forecast_hourly
 
     @forecast_hourly.setter
-    def forecast_hourly(self, new_forecast):
+    def forecast_hourly(self, new_forecast: list[ForecastHourlyData]) -> None:
         """Forecast hourly new value."""
         self._forecast_hourly = new_forecast
 

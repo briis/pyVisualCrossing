@@ -12,6 +12,7 @@ import json
 import logging
 
 from typing import Any
+import urllib.error
 import urllib.request
 
 import aiohttp
@@ -52,16 +53,18 @@ class VisualCrossingInternalServerError(Exception):
 class VisualCrossingAPIBase:
     """Baseclass to use as dependency injection pattern for easier automatic testing."""
 
+    session: aiohttp.ClientSession | None = None
+
     @abc.abstractmethod
     def fetch_data(
         self, api_key: str, latitude: float, longitude: float, days: int, language: str
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | None:
         """Override this."""
         raise NotImplementedError("users must define fetch_data to use this base class")
 
     @abc.abstractmethod
     async def async_fetch_data(
-        api_key: str, latitude: float, longitude: float, days: int, language: str
+        self, api_key: str, latitude: float, longitude: float, days: int, language: str
     ) -> dict[str, Any]:
         """Override this."""
         raise NotImplementedError("users must define fetch_data to use this base class")
@@ -76,7 +79,7 @@ class VisualCrossingAPI(VisualCrossingAPIBase):
 
     def fetch_data(
         self, api_key: str, latitude: float, longitude: float, days: int, language: str
-    ) -> dict[str, Any]:
+    ) -> dict[str, Any] | None:
         """Get data from API."""
         api_url = f"{VISUALCROSSING_BASE_URL}{latitude},{longitude}/today/next{days}days?unitGroup=metric&key={api_key}&contentType=json&iconSet=icons2&lang={language}"
         _LOGGER.debug("URL: %s", api_url)
@@ -155,7 +158,7 @@ class VisualCrossing:
         longitude: float,
         days: int = 14,
         language: str = "en",
-        session: aiohttp.ClientSession = None,
+        session: aiohttp.ClientSession | None = None,
         api: VisualCrossingAPIBase = VisualCrossingAPI(),
     ) -> None:
         """Return data from Weather API."""
@@ -176,7 +179,7 @@ class VisualCrossing:
         if language not in SUPPORTED_LANGUAGES:
             self._language = "en"
 
-    def fetch_data(self) -> list[ForecastData]:
+    def fetch_data(self) -> ForecastData | None:
         """Return list of weather data."""
 
         self._json_data = self._api.fetch_data(
@@ -189,7 +192,7 @@ class VisualCrossing:
 
         return _fetch_data(self._json_data)
 
-    async def async_fetch_data(self) -> list[ForecastData]:
+    async def async_fetch_data(self) -> ForecastData | None:
         """Return list of weather data."""
 
         self._json_data = await self._api.async_fetch_data(
@@ -203,7 +206,7 @@ class VisualCrossing:
         return _fetch_data(self._json_data)
 
 
-def _fetch_data(api_result: dict) -> list[ForecastData]:
+def _fetch_data(api_result: dict[str, Any] | None) -> ForecastData | None:
     """Return result from API to ForecastData List."""
 
     # Return nothing af the Request for data fails
@@ -307,7 +310,7 @@ def _fetch_data(api_result: dict) -> list[ForecastData]:
 
 
 # pylint: disable=R0914, R0912, W0212, R0915
-def _get_current_data(api_result: dict) -> list[ForecastData]:
+def _get_current_data(api_result: dict[str, Any]) -> ForecastData:
     """Return WeatherFlowForecast list from API."""
 
     item = api_result["currentConditions"]
@@ -333,8 +336,8 @@ def _get_current_data(api_result: dict) -> list[ForecastData]:
     wind_speed = item.get("windspeed", None)
     wind_gust_speed = item.get("windgust", None)
     wind_bearing = item.get("winddir", None)
-    location = api_result.get("address", None)
-    description = api_result.get("description", None)
+    location = api_result.get("address", "")
+    description = api_result.get("description", "")
 
     current_condition = ForecastData(
         day_hour_obj,
