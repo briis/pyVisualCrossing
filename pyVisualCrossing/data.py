@@ -29,6 +29,13 @@ class ForecastData:
         wind_speed: float,
         location_name: str,
         description: str,
+        snow: float | None = None,
+        snow_depth: float | None = None,
+        precipitation_type: list[str] | None = None,
+        solarenergy: float | None = None,
+        sunrise: str | None = None,
+        sunset: str | None = None,
+        moon_phase: float | None = None,
         forecast_daily: list[ForecastDailyData] | None = None,
         forecast_hourly: list[ForecastHourlyData] | None = None,
     ) -> None:
@@ -52,6 +59,13 @@ class ForecastData:
         self._wind_speed = wind_speed
         self._location_name = location_name
         self._description = description
+        self._snow = snow
+        self._snow_depth = snow_depth
+        self._precipitation_type = precipitation_type
+        self._solarenergy = solarenergy
+        self._sunrise = sunrise
+        self._sunset = sunset
+        self._moon_phase = moon_phase
         self._forecast_daily = forecast_daily
         self._forecast_hourly = forecast_hourly
 
@@ -101,6 +115,11 @@ class ForecastData:
         return self._precipitation_probability
 
     @property
+    def precipitation_type(self) -> list[str] | None:
+        """Type(s) of precipitation, if any."""
+        return self._precipitation_type
+
+    @property
     def pressure(self) -> float:
         """Sea Level Pressure (MB)."""
         return self._pressure
@@ -109,6 +128,11 @@ class ForecastData:
     def solarradiation(self) -> float:
         """Solar Radiation (w/m2)."""
         return self._solarradiation
+
+    @property
+    def solarenergy(self) -> float | None:
+        """Solar Energy (MJ/m2)."""
+        return self._solarenergy
 
     @property
     def visibility(self) -> int:
@@ -134,6 +158,31 @@ class ForecastData:
     def uv_index(self) -> float:
         """UV Index."""
         return self._uv_index
+
+    @property
+    def snow(self) -> float | None:
+        """Snowfall (cm)."""
+        return self._snow
+
+    @property
+    def snow_depth(self) -> float | None:
+        """Snow Depth (cm)."""
+        return self._snow_depth
+
+    @property
+    def sunrise(self) -> str | None:
+        """Sunrise time."""
+        return self._sunrise
+
+    @property
+    def sunset(self) -> str | None:
+        """Sunset time."""
+        return self._sunset
+
+    @property
+    def moon_phase(self) -> float | None:
+        """Moon phase, as a fraction between 0 and 1."""
+        return self._moon_phase
 
     @property
     def datetime(self) -> datetime:
@@ -198,6 +247,16 @@ class ForecastDailyData:
         wind_speed: float,
         wind_gust: float,
         uv_index: int,
+        snow: float | None = None,
+        snow_depth: float | None = None,
+        precipitation_type: list[str] | None = None,
+        precipitation_cover: float | None = None,
+        solarradiation: float | None = None,
+        solarenergy: float | None = None,
+        severe_risk: float | None = None,
+        sunrise: str | None = None,
+        sunset: str | None = None,
+        moon_phase: float | None = None,
     ) -> None:
         """Dataset constructor."""
         self._datetime = datetime
@@ -216,6 +275,16 @@ class ForecastDailyData:
         self._wind_gust = wind_gust
         self._wind_speed = wind_speed
         self._uv_index = uv_index
+        self._snow = snow
+        self._snow_depth = snow_depth
+        self._precipitation_type = precipitation_type
+        self._precipitation_cover = precipitation_cover
+        self._solarradiation = solarradiation
+        self._solarenergy = solarenergy
+        self._severe_risk = severe_risk
+        self._sunrise = sunrise
+        self._sunset = sunset
+        self._moon_phase = moon_phase
 
     @property
     def datetime(self) -> datetime:
@@ -273,9 +342,34 @@ class ForecastDailyData:
         return self._precipitation
 
     @property
+    def precipitation_type(self) -> list[str] | None:
+        """Type(s) of precipitation, if any."""
+        return self._precipitation_type
+
+    @property
+    def precipitation_cover(self) -> float | None:
+        """Percentage of the day with precipitation (%)."""
+        return self._precipitation_cover
+
+    @property
     def pressure(self) -> float:
         """Sea Level Pressure (MB)."""
         return self._pressure
+
+    @property
+    def solarradiation(self) -> float | None:
+        """Solar Radiation (w/m2)."""
+        return self._solarradiation
+
+    @property
+    def solarenergy(self) -> float | None:
+        """Solar Energy (MJ/m2)."""
+        return self._solarenergy
+
+    @property
+    def severe_risk(self) -> float | None:
+        """Risk score of severe weather."""
+        return self._severe_risk
 
     @property
     def uv_index(self) -> float:
@@ -296,6 +390,31 @@ class ForecastDailyData:
     def wind_speed(self) -> float:
         """Wind speed (m/s)."""
         return self._wind_speed
+
+    @property
+    def snow(self) -> float | None:
+        """Snowfall (cm)."""
+        return self._snow
+
+    @property
+    def snow_depth(self) -> float | None:
+        """Snow Depth (cm)."""
+        return self._snow_depth
+
+    @property
+    def sunrise(self) -> str | None:
+        """Sunrise time."""
+        return self._sunrise
+
+    @property
+    def sunset(self) -> str | None:
+        """Sunset time."""
+        return self._sunset
+
+    @property
+    def moon_phase(self) -> float | None:
+        """Moon phase, as a fraction between 0 and 1."""
+        return self._moon_phase
 
 
 class ForecastHourlyData:
@@ -319,6 +438,13 @@ class ForecastHourlyData:
         wind_gust_speed: int,
         wind_speed: int,
         uv_index: float,
+        snow: float | None = None,
+        snow_depth: float | None = None,
+        precipitation_type: list[str] | None = None,
+        solarradiation: float | None = None,
+        solarenergy: float | None = None,
+        severe_risk: float | None = None,
+        visibility: float | None = None,
     ) -> None:
         """Dataset constructor."""
         self._datetime = datetime
@@ -336,6 +462,13 @@ class ForecastHourlyData:
         self._wind_gust_speed = wind_gust_speed
         self._wind_speed = wind_speed
         self._uv_index = uv_index
+        self._snow = snow
+        self._snow_depth = snow_depth
+        self._precipitation_type = precipitation_type
+        self._solarradiation = solarradiation
+        self._solarenergy = solarenergy
+        self._severe_risk = severe_risk
+        self._visibility = visibility
 
     @property
     def temperature(self) -> float:
@@ -383,9 +516,34 @@ class ForecastHourlyData:
         return self._precipitation_probability
 
     @property
+    def precipitation_type(self) -> list[str] | None:
+        """Type(s) of precipitation, if any."""
+        return self._precipitation_type
+
+    @property
     def pressure(self) -> float:
         """Sea Level Pressure (MB)."""
         return self._pressure
+
+    @property
+    def solarradiation(self) -> float | None:
+        """Solar Radiation (w/m2)."""
+        return self._solarradiation
+
+    @property
+    def solarenergy(self) -> float | None:
+        """Solar Energy (MJ/m2)."""
+        return self._solarenergy
+
+    @property
+    def severe_risk(self) -> float | None:
+        """Risk score of severe weather."""
+        return self._severe_risk
+
+    @property
+    def visibility(self) -> float | None:
+        """Visibility (km)."""
+        return self._visibility
 
     @property
     def wind_bearing(self) -> float:
@@ -406,6 +564,16 @@ class ForecastHourlyData:
     def uv_index(self) -> float:
         """UV Index."""
         return self._uv_index
+
+    @property
+    def snow(self) -> float | None:
+        """Snowfall (cm)."""
+        return self._snow
+
+    @property
+    def snow_depth(self) -> float | None:
+        """Snow Depth (cm)."""
+        return self._snow_depth
 
     @property
     def datetime(self) -> datetime:

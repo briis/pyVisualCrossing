@@ -90,6 +90,13 @@ If the API request fails, one of these exceptions (all importable from `pyVisual
 | `wind_gust_speed` | Wind gust speed |
 | `location_name` | Name of the location |
 | `description` | Weather description |
+| `snow` | Snowfall |
+| `snow_depth` | Snow depth |
+| `precipitation_type` | Type(s) of precipitation, if any (e.g. `rain`, `snow`) |
+| `solarenergy` | Solar energy (MJ/m2) |
+| `sunrise` | Sunrise time |
+| `sunset` | Sunset time |
+| `moon_phase` | Moon phase, as a fraction between 0 and 1 |
 | `update_time` | Timestamp of when the data was fetched |
 | `forecast_daily` | List of `ForecastDailyData` |
 | `forecast_hourly` | List of `ForecastHourlyData` |
@@ -114,6 +121,16 @@ If the API request fails, one of these exceptions (all importable from `pyVisual
 | `wind_bearing` | Wind bearing (degrees) |
 | `wind_speed` | Wind speed |
 | `wind_gust` | Wind gust speed |
+| `snow` | Snowfall |
+| `snow_depth` | Snow depth |
+| `precipitation_type` | Type(s) of precipitation, if any (e.g. `rain`, `snow`) |
+| `precipitation_cover` | Percentage of the day with precipitation (%) |
+| `solarradiation` | Solar radiation (W/m2) |
+| `solarenergy` | Solar energy (MJ/m2) |
+| `severe_risk` | Risk score of severe weather |
+| `sunrise` | Sunrise time |
+| `sunset` | Sunset time |
+| `moon_phase` | Moon phase, as a fraction between 0 and 1 |
 
 ### Hourly Forecast (`ForecastHourlyData`)
 
@@ -136,6 +153,13 @@ Only hours later than the current time are included.
 | `wind_bearing` | Wind bearing (degrees) |
 | `wind_speed` | Wind speed |
 | `wind_gust_speed` | Wind gust speed |
+| `snow` | Snowfall |
+| `snow_depth` | Snow depth |
+| `precipitation_type` | Type(s) of precipitation, if any (e.g. `rain`, `snow`) |
+| `solarradiation` | Solar radiation (W/m2) |
+| `solarenergy` | Solar energy (MJ/m2) |
+| `severe_risk` | Risk score of severe weather |
+| `visibility` | Visibility |
 
 ## Languages
 Available languages include: **ar** (Arabic), **bg** (Bulgiarian), **cs** (Czech), **da** (Danish), **de** (German), **el** (Greek Modern), **en** (English), **es** (Spanish), **fa** (Farsi), **fi** (Finnish), **fr** (French), **he** (Hebrew), **hu**, (Hungarian), **it** (Italian), **ja** (Japanese), **ko** (Korean), **nl** (Dutch), **pl** (Polish), **pt** (Portuguese), **sr** (Serbian), **sv** (Swedish), **tr** (Turkish), **uk** (Ukranian), **vi** (Vietnamese) and **zh** (Chinese).
@@ -176,7 +200,3 @@ We use the Iconset *icons2*, which gives a more detailed description of the cond
 | partly-cloudy-night   | Cloud cover is greater than 20% cover during night time. |
 | clear-day             | Cloud cover is less than 20% cover during day time |
 | clear-night           | Cloud cover is less than 20% cover during night time |
-
-## TODO
-
-- Add all available items to the Data Structure
