@@ -159,7 +159,7 @@ class VisualCrossing:
         days: int = 14,
         language: str = "en",
         session: aiohttp.ClientSession | None = None,
-        api: VisualCrossingAPIBase = VisualCrossingAPI(),
+        api: VisualCrossingAPIBase | None = None,
     ) -> None:
         """Return data from Weather API."""
         self._api_key = api_key
@@ -167,7 +167,7 @@ class VisualCrossing:
         self._longitude = longitude
         self._days = days
         self._language = language
-        self._api = api
+        self._api = api if api is not None else VisualCrossingAPI()
         self._json_data = None
 
         if days > 14:
