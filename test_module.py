@@ -5,6 +5,7 @@ API_KEY = [Your API key from Visual Crossing]
 LATITUDE = [The latitude you want to get data for]
 LONGITUDE = [The longitude you want to get data for]
 """
+
 from __future__ import annotations
 
 from dotenv import load_dotenv
@@ -19,7 +20,7 @@ from pyVisualCrossing import (
     ForecastDailyData,
     ForecastHourlyData,
 )
-from pyVisualCrossing.const import DATE_FORMAT, DATE_TIME_FORMAT
+from pyVisualCrossing.const import DATE_FORMAT
 
 _LOGGER = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -31,7 +32,7 @@ latitude = os.getenv("LATITUDE")
 longitude = os.getenv("LONGITUDE")
 data = None
 
-print (datetime.datetime.today().strftime(DATE_FORMAT))
+print(datetime.datetime.today().strftime(DATE_FORMAT))
 # dato = "2023-09-27"
 # tid = "06:00:00"
 # dato_obj = datetime.datetime.strptime(dato, DATE_FORMAT)

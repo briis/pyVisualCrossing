@@ -2,6 +2,7 @@
 
 See: https://www.visualcrossing.com/.
 """
+
 from __future__ import annotations
 
 import abc
@@ -15,7 +16,12 @@ import urllib.request
 
 import aiohttp
 
-from .const import DATE_FORMAT, DATE_TIME_FORMAT, SUPPORTED_LANGUAGES, VISUALCROSSING_BASE_URL
+from .const import (
+    DATE_FORMAT,
+    DATE_TIME_FORMAT,
+    SUPPORTED_LANGUAGES,
+    VISUALCROSSING_BASE_URL,
+)
 from .data import ForecastData, ForecastDailyData, ForecastHourlyData
 
 UTC = datetime.timezone.utc
@@ -213,7 +219,9 @@ def _fetch_data(api_result: dict) -> list[ForecastData]:
     # Loop Through Records and add Daily and Hourly Forecast Data
     for item in api_result["days"]:
         day_str = item["datetime"]
-        day_obj = datetime.datetime.strptime(day_str, DATE_FORMAT).astimezone(timezone.utc)
+        day_obj = datetime.datetime.strptime(day_str, DATE_FORMAT).astimezone(
+            timezone.utc
+        )
         condition = item.get("conditions", None)
         cloudcover = item.get("cloudcover", None)
         icon = item.get("icon", None)
@@ -254,7 +262,9 @@ def _fetch_data(api_result: dict) -> list[ForecastData]:
         for row in item["hours"]:
             now = datetime.datetime.now(timezone.utc)
             hour = row["datetime"]
-            day_hour_obj = datetime.datetime.strptime(f"{day_str} {hour}", DATE_TIME_FORMAT).astimezone(timezone.utc)
+            day_hour_obj = datetime.datetime.strptime(
+                f"{day_str} {hour}", DATE_TIME_FORMAT
+            ).astimezone(timezone.utc)
             if day_hour_obj > now:
                 condition = row.get("conditions", None)
                 cloudcover = row.get("cloudcover", None)
@@ -304,7 +314,9 @@ def _get_current_data(api_result: dict) -> list[ForecastData]:
 
     day_str = datetime.datetime.today().strftime(DATE_FORMAT)
     hour = item["datetime"]
-    day_hour_obj = datetime.datetime.strptime(f"{day_str} {hour}", DATE_TIME_FORMAT).astimezone(timezone.utc)
+    day_hour_obj = datetime.datetime.strptime(
+        f"{day_str} {hour}", DATE_TIME_FORMAT
+    ).astimezone(timezone.utc)
     condition = item.get("conditions", None)
     cloudcover = item.get("cloudcover", None)
     icon = item.get("icon", None)
