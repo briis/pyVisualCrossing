@@ -1,7 +1,7 @@
 // See https://aka.ms/vscode-remote/devcontainer.json for format details.
 {
 	"name": "pyVisualCrossing",
-	"image": "python:3.12-bookworm",
+	"image": "mcr.microsoft.com/devcontainers/base:debian",
 	"containerEnv": {
 		"TZ": "Europe/Copenhagen"
 	},
@@ -10,19 +10,35 @@
 		"-e",
 		"GIT_EDTIOR='code --wait'"
 	],
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ms-python.python"
-			],
-			"settings": {
-				"terminal.integrated.shell.linux": "/bin/bash",
-				"python.pythonPath": "/usr/local/bin/python",
-				"editor.formatOnPaste": false,
-				"editor.formatOnSave": true,
-				"editor.formatOnType": true,
-				"files.trimTrailingWhitespace": true
-			}
-		}
-	},
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "charliermarsh.ruff",
+                "github.vscode-pull-request-github",
+                "ms-python.python",
+                "ms-python.autopep8",
+                "ms-python.vscode-pylance",
+                "ryanluker.vscode-coverage-gutters"
+            ],
+            "settings": {
+                "files.eol": "\n",
+                "editor.tabSize": 4,
+                "editor.formatOnPaste": true,
+                "editor.formatOnSave": true,
+                "editor.formatOnType": false,
+                "files.trimTrailingWhitespace": true,
+                "python.analysis.typeCheckingMode": "basic",
+                "python.analysis.autoImportCompletions": true,
+                "[python]": {
+                    "editor.defaultFormatter": "ms-python.autopep8"
+                }
+            }
+        }
+    },
+    "remoteUser": "vscode",
+    "features": {
+        "ghcr.io/devcontainers/features/python:1": {
+            "version": "3.14"
+        }
+    }
 }

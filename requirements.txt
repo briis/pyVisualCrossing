@@ -12,3 +12,5 @@ python-dotenv
 requests
 requests-toolbelt
 ruff
+mypy
+pre-commit
