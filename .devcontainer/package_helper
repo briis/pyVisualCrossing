@@ -2,14 +2,13 @@
 
 function BuildPackage {
   echo "Building package..."
-  cd /workspaces/pypi_visualcrossing
-  python pyVisualCrossing/setup.py sdist
+  cd /workspaces/pyVisualCrossing
+  python -m build
   echo "Package built!"
 }
 
 function UploadPackage {
-  echo "Building package..."
-  twine upload /workspaces/pypi_visualcrossing/dist/*
-  echo "Package built!"
+  echo "Uploading package..."
+  twine upload /workspaces/pyVisualCrossing/dist/*
+  echo "Package uploaded!"
 }
-

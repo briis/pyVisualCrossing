@@ -5,6 +5,10 @@ from __future__ import annotations
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+DEFAULT_LANGUAGE = "en"
+MAX_FORECAST_DAYS = 14
+REQUEST_TIMEOUT = 30  # seconds
+
 SUPPORTED_LANGUAGES = [
     "ar",
     "bg",

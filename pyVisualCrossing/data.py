@@ -1,581 +1,121 @@
 """Holds the Data Classes for Visual Crossing Wrapper."""
 
 from __future__ import annotations
+
+from dataclasses import dataclass
 from datetime import datetime
 
 
+@dataclass(slots=True)
+class ForecastDailyData:
+    """Class to hold daily forecast data.
+
+    Units are metric: temperatures in Celsius, precipitation in mm, snow in cm,
+    pressure in mb, wind speed in km/h, wind bearing in degrees, solar radiation
+    in W/m2 and solar energy in MJ/m2. Sunrise and sunset are local times of the
+    forecast location and moon phase is a fraction between 0 and 1.
+    """
+
+    datetime: datetime
+    temperature: float | None
+    temp_low: float | None
+    apparent_temperature: float | None
+    condition: str | None
+    icon: str | None
+    cloud_cover: float | None
+    dew_point: float | None
+    humidity: float | None
+    precipitation_probability: float | None
+    precipitation: float | None
+    pressure: float | None
+    wind_bearing: float | None
+    wind_speed: float | None
+    wind_gust: float | None
+    uv_index: float | None
+    snow: float | None = None
+    snow_depth: float | None = None
+    precipitation_type: list[str] | None = None
+    precipitation_cover: float | None = None
+    solarradiation: float | None = None
+    solarenergy: float | None = None
+    severe_risk: float | None = None
+    sunrise: str | None = None
+    sunset: str | None = None
+    moon_phase: float | None = None
+
+
+@dataclass(slots=True)
+class ForecastHourlyData:
+    """Class to hold hourly forecast data.
+
+    Units are the same as for ForecastDailyData, plus visibility in km.
+    """
+
+    datetime: datetime
+    temperature: float | None
+    apparent_temperature: float | None
+    condition: str | None
+    cloud_cover: float | None
+    icon: str | None
+    dew_point: float | None
+    humidity: float | None
+    precipitation: float | None
+    precipitation_probability: float | None
+    pressure: float | None
+    wind_bearing: float | None
+    wind_gust_speed: float | None
+    wind_speed: float | None
+    uv_index: float | None
+    snow: float | None = None
+    snow_depth: float | None = None
+    precipitation_type: list[str] | None = None
+    solarradiation: float | None = None
+    solarenergy: float | None = None
+    severe_risk: float | None = None
+    visibility: float | None = None
+
+
+@dataclass(slots=True)
 class ForecastData:
-    """Class to hold forecast data."""
+    """Class to hold current conditions and the daily and hourly forecasts.
 
-    # pylint: disable=R0913, R0902, R0914
-    def __init__(
-        self,
-        datetime: datetime,
-        apparent_temperature: float,
-        condition: str,
-        cloud_cover: int,
-        dew_point: float,
-        humidity: int,
-        icon: str,
-        precipitation: float,
-        precipitation_probability: int,
-        pressure: float,
-        solarradiation: float,
-        temperature: float,
-        visibility: int,
-        uv_index: int,
-        wind_bearing: int,
-        wind_gust_speed: float,
-        wind_speed: float,
-        location_name: str,
-        description: str,
-        snow: float | None = None,
-        snow_depth: float | None = None,
-        precipitation_type: list[str] | None = None,
-        solarenergy: float | None = None,
-        sunrise: str | None = None,
-        sunset: str | None = None,
-        moon_phase: float | None = None,
-        forecast_daily: list[ForecastDailyData] | None = None,
-        forecast_hourly: list[ForecastHourlyData] | None = None,
-    ) -> None:
-        """Dataset constructor."""
-        self._datetime = datetime
-        self._apparent_temperature = apparent_temperature
-        self._condition = condition
-        self._cloud_cover = cloud_cover
-        self._dew_point = dew_point
-        self._humidity = humidity
-        self._icon = icon
-        self._precipitation = precipitation
-        self._precipitation_probability = precipitation_probability
-        self._pressure = pressure
-        self._solarradiation = solarradiation
-        self._visibility = visibility
-        self._temperature = temperature
-        self._uv_index = uv_index
-        self._wind_bearing = wind_bearing
-        self._wind_gust_speed = wind_gust_speed
-        self._wind_speed = wind_speed
-        self._location_name = location_name
-        self._description = description
-        self._snow = snow
-        self._snow_depth = snow_depth
-        self._precipitation_type = precipitation_type
-        self._solarenergy = solarenergy
-        self._sunrise = sunrise
-        self._sunset = sunset
-        self._moon_phase = moon_phase
-        self._forecast_daily = forecast_daily
-        self._forecast_hourly = forecast_hourly
+    Units are the same as for ForecastHourlyData.
+    """
 
-    @property
-    def temperature(self) -> float:
-        """Air temperature (Celcius)."""
-        return self._temperature
+    datetime: datetime
+    apparent_temperature: float | None
+    condition: str | None
+    cloud_cover: float | None
+    dew_point: float | None
+    humidity: float | None
+    icon: str | None
+    precipitation: float | None
+    precipitation_probability: float | None
+    pressure: float | None
+    solarradiation: float | None
+    temperature: float | None
+    visibility: float | None
+    uv_index: float | None
+    wind_bearing: float | None
+    wind_gust_speed: float | None
+    wind_speed: float | None
+    location_name: str
+    description: str
+    snow: float | None = None
+    snow_depth: float | None = None
+    precipitation_type: list[str] | None = None
+    solarenergy: float | None = None
+    sunrise: str | None = None
+    sunset: str | None = None
+    moon_phase: float | None = None
+    forecast_daily: list[ForecastDailyData] | None = None
+    forecast_hourly: list[ForecastHourlyData] | None = None
 
-    @property
-    def dew_point(self) -> float:
-        """Dew Point (Celcius)."""
-        return self._dew_point
-
-    @property
-    def condition(self) -> str:
-        """Weather condition text."""
-        return self._condition
-
-    @property
-    def cloud_cover(self) -> int:
-        """Cloud Coverage."""
-        return self._cloud_cover
-
-    @property
-    def icon(self) -> str:
-        """Weather condition symbol."""
-        return self._icon
-
-    @property
-    def humidity(self) -> int:
-        """Humidity (%)."""
-        return self._humidity
-
-    @property
-    def apparent_temperature(self) -> float:
-        """Feels like temperature (Celcius)."""
-        return self._apparent_temperature
-
-    @property
-    def precipitation(self) -> float:
-        """Precipitation (mm)."""
-        return self._precipitation
-
-    @property
-    def precipitation_probability(self) -> int:
-        """Posobility of Precipiation (%)."""
-        return self._precipitation_probability
-
-    @property
-    def precipitation_type(self) -> list[str] | None:
-        """Type(s) of precipitation, if any."""
-        return self._precipitation_type
-
-    @property
-    def pressure(self) -> float:
-        """Sea Level Pressure (MB)."""
-        return self._pressure
-
-    @property
-    def solarradiation(self) -> float:
-        """Solar Radiation (w/m2)."""
-        return self._solarradiation
-
-    @property
-    def solarenergy(self) -> float | None:
-        """Solar Energy (MJ/m2)."""
-        return self._solarenergy
-
-    @property
-    def visibility(self) -> int:
-        """Visibility (km)."""
-        return self._visibility
-
-    @property
-    def wind_bearing(self) -> float:
-        """Wind bearing (degrees)."""
-        return self._wind_bearing
-
-    @property
-    def wind_gust_speed(self) -> float:
-        """Wind gust (m/s)."""
-        return self._wind_gust_speed
-
-    @property
-    def wind_speed(self) -> float:
-        """Wind speed (m/s)."""
-        return self._wind_speed
-
-    @property
-    def uv_index(self) -> float:
-        """UV Index."""
-        return self._uv_index
-
-    @property
-    def snow(self) -> float | None:
-        """Snowfall (cm)."""
-        return self._snow
-
-    @property
-    def snow_depth(self) -> float | None:
-        """Snow Depth (cm)."""
-        return self._snow_depth
-
-    @property
-    def sunrise(self) -> str | None:
-        """Sunrise time."""
-        return self._sunrise
-
-    @property
-    def sunset(self) -> str | None:
-        """Sunset time."""
-        return self._sunset
-
-    @property
-    def moon_phase(self) -> float | None:
-        """Moon phase, as a fraction between 0 and 1."""
-        return self._moon_phase
-
-    @property
-    def datetime(self) -> datetime:
-        """Valid time."""
-        return self._datetime
-
-    @property
-    def location_name(self) -> str:
-        """Location name."""
-        return str(self._location_name).capitalize()
-
-    @property
-    def description(self) -> str:
-        """Weather Description."""
-        return self._description
+    def __post_init__(self) -> None:
+        """Normalise the location name."""
+        self.location_name = str(self.location_name).capitalize()
 
     @property
     def update_time(self) -> str:
-        """Last updated."""
+        """Last updated, as an ISO 8601 string."""
         return datetime.now().isoformat()
-
-    @property
-    def forecast_daily(self) -> list[ForecastDailyData] | None:
-        """Forecast List."""
-        return self._forecast_daily
-
-    @forecast_daily.setter
-    def forecast_daily(self, new_forecast: list[ForecastDailyData]) -> None:
-        """Forecast daily new value."""
-        self._forecast_daily = new_forecast
-
-    @property
-    def forecast_hourly(self) -> list[ForecastHourlyData] | None:
-        """Forecast List."""
-        return self._forecast_hourly
-
-    @forecast_hourly.setter
-    def forecast_hourly(self, new_forecast: list[ForecastHourlyData]) -> None:
-        """Forecast hourly new value."""
-        self._forecast_hourly = new_forecast
-
-
-class ForecastDailyData:
-    """Class to hold daily forecast data."""
-
-    # pylint: disable=R0913, R0902, R0914
-    def __init__(
-        self,
-        datetime: datetime,
-        temperature: float,
-        temp_low: float,
-        apparent_temperature: float,
-        condition: str,
-        icon: str,
-        cloud_cover: int,
-        dew_point: float,
-        humidity: int,
-        precipitation_probability: int,
-        precipitation: float,
-        pressure: float,
-        wind_bearing: int,
-        wind_speed: float,
-        wind_gust: float,
-        uv_index: int,
-        snow: float | None = None,
-        snow_depth: float | None = None,
-        precipitation_type: list[str] | None = None,
-        precipitation_cover: float | None = None,
-        solarradiation: float | None = None,
-        solarenergy: float | None = None,
-        severe_risk: float | None = None,
-        sunrise: str | None = None,
-        sunset: str | None = None,
-        moon_phase: float | None = None,
-    ) -> None:
-        """Dataset constructor."""
-        self._datetime = datetime
-        self._temperature = temperature
-        self._temp_low = temp_low
-        self._apparent_temperature = apparent_temperature
-        self._condition = condition
-        self._cloud_cover = cloud_cover
-        self._dew_point = dew_point
-        self._humidity = humidity
-        self._icon = icon
-        self._precipitation_probability = precipitation_probability
-        self._precipitation = precipitation
-        self._pressure = pressure
-        self._wind_bearing = wind_bearing
-        self._wind_gust = wind_gust
-        self._wind_speed = wind_speed
-        self._uv_index = uv_index
-        self._snow = snow
-        self._snow_depth = snow_depth
-        self._precipitation_type = precipitation_type
-        self._precipitation_cover = precipitation_cover
-        self._solarradiation = solarradiation
-        self._solarenergy = solarenergy
-        self._severe_risk = severe_risk
-        self._sunrise = sunrise
-        self._sunset = sunset
-        self._moon_phase = moon_phase
-
-    @property
-    def datetime(self) -> datetime:
-        """Valid time."""
-        return self._datetime
-
-    @property
-    def temperature(self) -> float:
-        """Air temperature (Celcius)."""
-        return self._temperature
-
-    @property
-    def temp_low(self) -> float:
-        """Air temperature min during the day (Celcius)."""
-        return self._temp_low
-
-    @property
-    def apparent_temperature(self) -> float:
-        """Feels like temperature (Celcius)."""
-        return self._apparent_temperature
-
-    @property
-    def condition(self) -> str:
-        """Weather condition text."""
-        return self._condition
-
-    @property
-    def cloud_cover(self) -> int:
-        """Cloud Coverage."""
-        return self._cloud_cover
-
-    @property
-    def dew_point(self) -> float:
-        """Dew Point (Celcius)."""
-        return self._dew_point
-
-    @property
-    def humidity(self) -> int:
-        """Humidity (%)."""
-        return self._humidity
-
-    @property
-    def icon(self) -> str:
-        """Weather condition symbol."""
-        return self._icon
-
-    @property
-    def precipitation_probability(self) -> int:
-        """Posobility of Precipiation (%)."""
-        return self._precipitation_probability
-
-    @property
-    def precipitation(self) -> float:
-        """Precipitation (mm)."""
-        return self._precipitation
-
-    @property
-    def precipitation_type(self) -> list[str] | None:
-        """Type(s) of precipitation, if any."""
-        return self._precipitation_type
-
-    @property
-    def precipitation_cover(self) -> float | None:
-        """Percentage of the day with precipitation (%)."""
-        return self._precipitation_cover
-
-    @property
-    def pressure(self) -> float:
-        """Sea Level Pressure (MB)."""
-        return self._pressure
-
-    @property
-    def solarradiation(self) -> float | None:
-        """Solar Radiation (w/m2)."""
-        return self._solarradiation
-
-    @property
-    def solarenergy(self) -> float | None:
-        """Solar Energy (MJ/m2)."""
-        return self._solarenergy
-
-    @property
-    def severe_risk(self) -> float | None:
-        """Risk score of severe weather."""
-        return self._severe_risk
-
-    @property
-    def uv_index(self) -> float:
-        """UV Index."""
-        return self._uv_index
-
-    @property
-    def wind_bearing(self) -> float:
-        """Wind bearing (degrees)."""
-        return self._wind_bearing
-
-    @property
-    def wind_gust(self) -> float:
-        """Wind Gust speed (m/s)."""
-        return self._wind_gust
-
-    @property
-    def wind_speed(self) -> float:
-        """Wind speed (m/s)."""
-        return self._wind_speed
-
-    @property
-    def snow(self) -> float | None:
-        """Snowfall (cm)."""
-        return self._snow
-
-    @property
-    def snow_depth(self) -> float | None:
-        """Snow Depth (cm)."""
-        return self._snow_depth
-
-    @property
-    def sunrise(self) -> str | None:
-        """Sunrise time."""
-        return self._sunrise
-
-    @property
-    def sunset(self) -> str | None:
-        """Sunset time."""
-        return self._sunset
-
-    @property
-    def moon_phase(self) -> float | None:
-        """Moon phase, as a fraction between 0 and 1."""
-        return self._moon_phase
-
-
-class ForecastHourlyData:
-    """Class to hold hourly forecast data."""
-
-    # pylint: disable=R0913, R0902, R0914
-    def __init__(
-        self,
-        datetime: datetime,
-        temperature: float,
-        apparent_temperature: float,
-        condition: str,
-        cloud_cover: int,
-        icon: str,
-        dew_point: float,
-        humidity: int,
-        precipitation: float,
-        precipitation_probability: int,
-        pressure: float,
-        wind_bearing: float,
-        wind_gust_speed: int,
-        wind_speed: int,
-        uv_index: float,
-        snow: float | None = None,
-        snow_depth: float | None = None,
-        precipitation_type: list[str] | None = None,
-        solarradiation: float | None = None,
-        solarenergy: float | None = None,
-        severe_risk: float | None = None,
-        visibility: float | None = None,
-    ) -> None:
-        """Dataset constructor."""
-        self._datetime = datetime
-        self._temperature = temperature
-        self._apparent_temperature = apparent_temperature
-        self._condition = condition
-        self._cloud_cover = cloud_cover
-        self._icon = icon
-        self._dew_point = dew_point
-        self._humidity = humidity
-        self._precipitation = precipitation
-        self._precipitation_probability = precipitation_probability
-        self._pressure = pressure
-        self._wind_bearing = wind_bearing
-        self._wind_gust_speed = wind_gust_speed
-        self._wind_speed = wind_speed
-        self._uv_index = uv_index
-        self._snow = snow
-        self._snow_depth = snow_depth
-        self._precipitation_type = precipitation_type
-        self._solarradiation = solarradiation
-        self._solarenergy = solarenergy
-        self._severe_risk = severe_risk
-        self._visibility = visibility
-
-    @property
-    def temperature(self) -> float:
-        """Air temperature (Celcius)."""
-        return self._temperature
-
-    @property
-    def condition(self) -> str:
-        """Weather condition text."""
-        return self._condition
-
-    @property
-    def cloud_cover(self) -> int:
-        """Cloud Coverage."""
-        return self._cloud_cover
-
-    @property
-    def dew_point(self) -> float:
-        """Dew Point (Celcius)."""
-        return self._dew_point
-
-    @property
-    def icon(self) -> str:
-        """Weather condition symbol."""
-        return self._icon
-
-    @property
-    def humidity(self) -> int:
-        """Humidity (%)."""
-        return self._humidity
-
-    @property
-    def apparent_temperature(self) -> float:
-        """Feels like temperature (Celcius)."""
-        return self._apparent_temperature
-
-    @property
-    def precipitation(self) -> float:
-        """Precipitation (mm)."""
-        return self._precipitation
-
-    @property
-    def precipitation_probability(self) -> int:
-        """Posobility of Precipiation (%)."""
-        return self._precipitation_probability
-
-    @property
-    def precipitation_type(self) -> list[str] | None:
-        """Type(s) of precipitation, if any."""
-        return self._precipitation_type
-
-    @property
-    def pressure(self) -> float:
-        """Sea Level Pressure (MB)."""
-        return self._pressure
-
-    @property
-    def solarradiation(self) -> float | None:
-        """Solar Radiation (w/m2)."""
-        return self._solarradiation
-
-    @property
-    def solarenergy(self) -> float | None:
-        """Solar Energy (MJ/m2)."""
-        return self._solarenergy
-
-    @property
-    def severe_risk(self) -> float | None:
-        """Risk score of severe weather."""
-        return self._severe_risk
-
-    @property
-    def visibility(self) -> float | None:
-        """Visibility (km)."""
-        return self._visibility
-
-    @property
-    def wind_bearing(self) -> float:
-        """Wind bearing (degrees)."""
-        return self._wind_bearing
-
-    @property
-    def wind_gust_speed(self) -> float:
-        """Wind gust (m/s)."""
-        return self._wind_gust_speed
-
-    @property
-    def wind_speed(self) -> float:
-        """Wind speed (m/s)."""
-        return self._wind_speed
-
-    @property
-    def uv_index(self) -> float:
-        """UV Index."""
-        return self._uv_index
-
-    @property
-    def snow(self) -> float | None:
-        """Snowfall (cm)."""
-        return self._snow
-
-    @property
-    def snow_depth(self) -> float | None:
-        """Snow Depth (cm)."""
-        return self._snow_depth
-
-    @property
-    def datetime(self) -> datetime:
-        """Valid time."""
-        return self._datetime

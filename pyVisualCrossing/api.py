@@ -6,26 +6,26 @@ See: https://www.visualcrossing.com/.
 from __future__ import annotations
 
 import abc
-import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 import json
 import logging
-
 from typing import Any
 import urllib.error
+from urllib.parse import urlencode
 import urllib.request
 
 import aiohttp
 
 from .const import (
-    DATE_FORMAT,
-    DATE_TIME_FORMAT,
+    DEFAULT_LANGUAGE,
+    MAX_FORECAST_DAYS,
+    REQUEST_TIMEOUT,
     SUPPORTED_LANGUAGES,
     VISUALCROSSING_BASE_URL,
 )
-from .data import ForecastData, ForecastDailyData, ForecastHourlyData
+from .data import ForecastDailyData, ForecastData, ForecastHourlyData
 
-UTC = datetime.timezone.utc
+UTC = timezone.utc
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -34,20 +34,72 @@ class VisualCrossingException(Exception):
     """Exception thrown if failing to access API."""
 
 
-class VisualCrossingBadRequest(Exception):
+class VisualCrossingBadRequest(VisualCrossingException):
     """Request is invalid."""
 
 
-class VisualCrossingUnauthorized(Exception):
+class VisualCrossingUnauthorized(VisualCrossingException):
     """Unauthorized API Key."""
 
 
-class VisualCrossingTooManyRequests(Exception):
+class VisualCrossingTooManyRequests(VisualCrossingException):
     """Too many daily request for the current plan."""
 
 
-class VisualCrossingInternalServerError(Exception):
+class VisualCrossingInternalServerError(VisualCrossingException):
     """Visual Crossing servers encounter an unexpected error."""
+
+
+_HTTP_ERRORS: dict[int, tuple[type[VisualCrossingException], str]] = {
+    400: (
+        VisualCrossingBadRequest,
+        "400 BAD_REQUEST Requests is invalid in some way (invalid dates, bad location parameter etc).",
+    ),
+    401: (
+        VisualCrossingUnauthorized,
+        "401 UNAUTHORIZED The API key is incorrect or your account status is inactive or disabled.",
+    ),
+    429: (
+        VisualCrossingTooManyRequests,
+        "429 TOO_MANY_REQUESTS Too many daily request for the current plan.",
+    ),
+    500: (
+        VisualCrossingInternalServerError,
+        "500 INTERNAL_SERVER_ERROR Visual Crossing servers encounter an unexpected error.",
+    ),
+}
+
+
+def _raise_for_status(status: int) -> None:
+    """Raise the matching exception for a non-200 HTTP status."""
+    if status == 200:
+        return
+    exc_class, message = _HTTP_ERRORS.get(
+        status, (VisualCrossingException, f"Unexpected HTTP status {status}")
+    )
+    raise exc_class(message)
+
+
+def _build_url(
+    api_key: str, latitude: float, longitude: float, days: int, language: str
+) -> str:
+    """Return the timeline API URL for the given location."""
+    query = urlencode(
+        {
+            "unitGroup": "metric",
+            "key": api_key,
+            "contentType": "json",
+            "iconSet": "icons2",
+            "lang": language,
+        }
+    )
+    url = (
+        f"{VISUALCROSSING_BASE_URL}{latitude},{longitude}/today/next{days}days?{query}"
+    )
+    _LOGGER.debug(
+        "URL: %s", url.replace(urlencode({"key": api_key}), "key=**REDACTED**")
+    )
+    return url
 
 
 class VisualCrossingAPIBase:
@@ -67,85 +119,51 @@ class VisualCrossingAPIBase:
         self, api_key: str, latitude: float, longitude: float, days: int, language: str
     ) -> dict[str, Any]:
         """Override this."""
-        raise NotImplementedError("users must define fetch_data to use this base class")
+        raise NotImplementedError(
+            "users must define async_fetch_data to use this base class"
+        )
 
 
 class VisualCrossingAPI(VisualCrossingAPIBase):
-    """Default implementation for WeatherFlow api."""
+    """Default implementation for Visual Crossing api."""
 
-    def __init__(self) -> None:
+    def __init__(self, session: aiohttp.ClientSession | None = None) -> None:
         """Init the API with or without session."""
-        self.session = None
+        self.session = session
 
     def fetch_data(
         self, api_key: str, latitude: float, longitude: float, days: int, language: str
-    ) -> dict[str, Any] | None:
+    ) -> dict[str, Any]:
         """Get data from API."""
-        api_url = f"{VISUALCROSSING_BASE_URL}{latitude},{longitude}/today/next{days}days?unitGroup=metric&key={api_key}&contentType=json&iconSet=icons2&lang={language}"
-        _LOGGER.debug("URL: %s", api_url)
-
+        url = _build_url(api_key, latitude, longitude, days, language)
         try:
-            response = urllib.request.urlopen(api_url)
-            data = response.read().decode("utf-8")
-            json_data = json.loads(data)
-
-            return json_data
-        except urllib.error.HTTPError as errh:
-            if errh.code == 400:
-                raise VisualCrossingBadRequest(
-                    "400 BAD_REQUEST Requests is invalid in some way (invalid dates, bad location parameter etc)."
-                )
-            elif errh.code == 401:
-                raise VisualCrossingUnauthorized(
-                    "401 UNAUTHORIZED The API key is incorrect or your account status is inactive or disabled."
-                )
-            elif errh.code == 429:
-                raise VisualCrossingTooManyRequests(
-                    "429 TOO_MANY_REQUESTS Too many daily request for the current plan."
-                )
-            elif errh.code == 500:
-                raise VisualCrossingInternalServerError(
-                    "500 INTERNAL_SERVER_ERROR Visual Crossing servers encounter an unexpected error."
-                )
-
-        return None
+            with urllib.request.urlopen(url, timeout=REQUEST_TIMEOUT) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as err:
+            _raise_for_status(err.code)
+            raise
 
     async def async_fetch_data(
         self, api_key: str, latitude: float, longitude: float, days: int, language: str
     ) -> dict[str, Any]:
         """Get data from API."""
-        api_url = f"{VISUALCROSSING_BASE_URL}{latitude},{longitude}/today/next{days}days?unitGroup=metric&key={api_key}&contentType=json&iconSet=icons2&lang={language}"
+        url = _build_url(api_key, latitude, longitude, days, language)
 
-        is_new_session = False
-        if self.session is None:
-            self.session = aiohttp.ClientSession()
-            is_new_session = True
+        if self.session is not None:
+            return await self._async_get(self.session, url)
 
-        async with self.session.get(api_url) as response:
-            if response.status != 200:
-                if is_new_session:
-                    await self.session.close()
-                if response.status == 400:
-                    raise VisualCrossingBadRequest(
-                        "400 BAD_REQUEST Requests is invalid in some way (invalid dates, bad location parameter etc)."
-                    )
-                if response.status == 401:
-                    raise VisualCrossingUnauthorized(
-                        "401 UNAUTHORIZED The API key is incorrect or your account status is inactive or disabled."
-                    )
-                if response.status == 429:
-                    raise VisualCrossingTooManyRequests(
-                        "429 TOO_MANY_REQUESTS Too many daily request for the current plan."
-                    )
-                if response.status == 500:
-                    raise VisualCrossingInternalServerError(
-                        "500 INTERNAL_SERVER_ERROR Visual Crossing servers encounter an unexpected error."
-                    )
+        # No session supplied, so use a temporary one that is always closed.
+        async with aiohttp.ClientSession() as session:
+            return await self._async_get(session, url)
 
-            data = await response.text()
-            if is_new_session:
-                await self.session.close()
-            return json.loads(data)
+    @staticmethod
+    async def _async_get(session: aiohttp.ClientSession, url: str) -> dict[str, Any]:
+        """Perform the GET request and return the decoded JSON."""
+        async with session.get(
+            url, timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT)
+        ) as response:
+            _raise_for_status(response.status)
+            return await response.json(content_type=None)
 
 
 class VisualCrossing:
@@ -156,8 +174,8 @@ class VisualCrossing:
         api_key: str,
         latitude: float,
         longitude: float,
-        days: int = 14,
-        language: str = "en",
+        days: int = MAX_FORECAST_DAYS,
+        language: str = DEFAULT_LANGUAGE,
         session: aiohttp.ClientSession | None = None,
         api: VisualCrossingAPIBase | None = None,
     ) -> None:
@@ -165,23 +183,18 @@ class VisualCrossing:
         self._api_key = api_key
         self._latitude = latitude
         self._longitude = longitude
-        self._days = days
-        self._language = language
+        self._days = min(days, MAX_FORECAST_DAYS)
+        self._language = (
+            language if language in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
+        )
         self._api = api if api is not None else VisualCrossingAPI()
-        self._json_data = None
-
-        if days > 14:
-            self._days = 14
+        self._json_data: dict[str, Any] | None = None
 
         if session:
             self._api.session = session
 
-        if language not in SUPPORTED_LANGUAGES:
-            self._language = "en"
-
     def fetch_data(self) -> ForecastData | None:
-        """Return list of weather data."""
-
+        """Return current conditions with daily and hourly forecasts."""
         self._json_data = self._api.fetch_data(
             self._api_key,
             self._latitude,
@@ -189,12 +202,10 @@ class VisualCrossing:
             self._days,
             self._language,
         )
-
         return _fetch_data(self._json_data)
 
     async def async_fetch_data(self) -> ForecastData | None:
-        """Return list of weather data."""
-
+        """Return current conditions with daily and hourly forecasts."""
         self._json_data = await self._api.async_fetch_data(
             self._api_key,
             self._latitude,
@@ -202,140 +213,94 @@ class VisualCrossing:
             self._days,
             self._language,
         )
-
         return _fetch_data(self._json_data)
 
 
-def _fetch_data(api_result: dict[str, Any] | None) -> ForecastData | None:
-    """Return result from API to ForecastData List."""
+def _to_datetime(item: dict[str, Any]) -> datetime:
+    """Return the UTC time of an API record.
 
-    # Return nothing af the Request for data fails
+    The epoch value is used because the "datetime" strings are local to the
+    forecast location, which is not necessarily the timezone of this host.
+    """
+    return datetime.fromtimestamp(item["datetimeEpoch"], UTC)
+
+
+def _fetch_data(api_result: dict[str, Any] | None) -> ForecastData | None:
+    """Return result from API as ForecastData."""
+
+    # Return nothing if the Request for data fails
     if api_result is None:
         return None
 
-    # Add Current Condition Data
-    weather_data: ForecastData = _get_current_data(api_result)
+    weather_data = _get_current_data(api_result)
+    now = datetime.now(UTC)
 
-    forecast_daily = []
-    forecast_hourly = []
+    forecast_daily: list[ForecastDailyData] = []
+    forecast_hourly: list[ForecastHourlyData] = []
 
-    # Loop Through Records and add Daily and Hourly Forecast Data
     for item in api_result["days"]:
-        day_str = item["datetime"]
-        day_obj = datetime.datetime.strptime(day_str, DATE_FORMAT).astimezone(
-            timezone.utc
+        forecast_daily.append(
+            ForecastDailyData(
+                datetime=_to_datetime(item),
+                temperature=item.get("tempmax"),
+                temp_low=item.get("tempmin"),
+                apparent_temperature=item.get("feelslike"),
+                condition=item.get("conditions"),
+                icon=item.get("icon"),
+                cloud_cover=item.get("cloudcover"),
+                dew_point=item.get("dew"),
+                humidity=item.get("humidity"),
+                precipitation_probability=item.get("precipprob"),
+                precipitation=item.get("precip"),
+                pressure=item.get("pressure"),
+                wind_bearing=item.get("winddir"),
+                wind_speed=item.get("windspeed"),
+                wind_gust=item.get("windgust"),
+                uv_index=item.get("uvindex"),
+                snow=item.get("snow"),
+                snow_depth=item.get("snowdepth"),
+                precipitation_type=item.get("preciptype"),
+                precipitation_cover=item.get("precipcover"),
+                solarradiation=item.get("solarradiation"),
+                solarenergy=item.get("solarenergy"),
+                severe_risk=item.get("severerisk"),
+                sunrise=item.get("sunrise"),
+                sunset=item.get("sunset"),
+                moon_phase=item.get("moonphase"),
+            )
         )
-        condition = item.get("conditions", None)
-        cloudcover = item.get("cloudcover", None)
-        icon = item.get("icon", None)
-        temperature = item.get("tempmax", None)
-        temp_low = item.get("tempmin", None)
-        dew_point = item.get("dew", None)
-        apparent_temperature = item.get("feelslike", None)
-        precipitation = item.get("precip", None)
-        precipitation_probability = item.get("precipprob", None)
-        precipitation_type = item.get("preciptype", None)
-        precipitation_cover = item.get("precipcover", None)
-        humidity = item.get("humidity", None)
-        pressure = item.get("pressure", None)
-        uv_index = item.get("uvindex", None)
-        wind_speed = item.get("windspeed", None)
-        wind_gust_speed = item.get("windgust", None)
-        wind_bearing = item.get("winddir", None)
-        snow = item.get("snow", None)
-        snow_depth = item.get("snowdepth", None)
-        solarradiation = item.get("solarradiation", None)
-        solarenergy = item.get("solarenergy", None)
-        severe_risk = item.get("severerisk", None)
-        sunrise = item.get("sunrise", None)
-        sunset = item.get("sunset", None)
-        moon_phase = item.get("moonphase", None)
 
-        day_data = ForecastDailyData(
-            datetime=day_obj,
-            temperature=temperature,
-            temp_low=temp_low,
-            apparent_temperature=apparent_temperature,
-            condition=condition,
-            icon=icon,
-            cloud_cover=cloudcover,
-            dew_point=dew_point,
-            humidity=humidity,
-            precipitation_probability=precipitation_probability,
-            precipitation=precipitation,
-            pressure=pressure,
-            wind_bearing=wind_bearing,
-            wind_speed=wind_speed,
-            wind_gust=wind_gust_speed,
-            uv_index=uv_index,
-            snow=snow,
-            snow_depth=snow_depth,
-            precipitation_type=precipitation_type,
-            precipitation_cover=precipitation_cover,
-            solarradiation=solarradiation,
-            solarenergy=solarenergy,
-            severe_risk=severe_risk,
-            sunrise=sunrise,
-            sunset=sunset,
-            moon_phase=moon_phase,
-        )
-        forecast_daily.append(day_data)
-
-        # Add Hourly data for this day
-        for row in item["hours"]:
-            now = datetime.datetime.now(timezone.utc)
-            hour = row["datetime"]
-            day_hour_obj = datetime.datetime.strptime(
-                f"{day_str} {hour}", DATE_TIME_FORMAT
-            ).astimezone(timezone.utc)
-            if day_hour_obj > now:
-                condition = row.get("conditions", None)
-                cloudcover = row.get("cloudcover", None)
-                icon = row.get("icon", None)
-                temperature = row.get("temp", None)
-                dew_point = row.get("dew", None)
-                apparent_temperature = row.get("feelslike", None)
-                precipitation = row.get("precip", None)
-                precipitation_probability = row.get("precipprob", None)
-                precipitation_type = row.get("preciptype", None)
-                humidity = row.get("humidity", None)
-                pressure = row.get("pressure", None)
-                uv_index = row.get("uvindex", None)
-                wind_speed = row.get("windspeed", None)
-                wind_gust_speed = row.get("windgust", None)
-                wind_bearing = row.get("winddir", None)
-                snow = row.get("snow", None)
-                snow_depth = row.get("snowdepth", None)
-                solarradiation = row.get("solarradiation", None)
-                solarenergy = row.get("solarenergy", None)
-                severe_risk = row.get("severerisk", None)
-                visibility = row.get("visibility", None)
-
-                hour_data = ForecastHourlyData(
-                    datetime=day_hour_obj,
-                    temperature=temperature,
-                    apparent_temperature=apparent_temperature,
-                    condition=condition,
-                    cloud_cover=cloudcover,
-                    icon=icon,
-                    dew_point=dew_point,
-                    humidity=humidity,
-                    precipitation=precipitation,
-                    precipitation_probability=precipitation_probability,
-                    pressure=pressure,
-                    wind_bearing=wind_bearing,
-                    wind_gust_speed=wind_gust_speed,
-                    wind_speed=wind_speed,
-                    uv_index=uv_index,
-                    snow=snow,
-                    snow_depth=snow_depth,
-                    precipitation_type=precipitation_type,
-                    solarradiation=solarradiation,
-                    solarenergy=solarenergy,
-                    severe_risk=severe_risk,
-                    visibility=visibility,
+        # Add the hours of this day that are still in the future
+        for row in item.get("hours", []):
+            hour_time = _to_datetime(row)
+            if hour_time <= now:
+                continue
+            forecast_hourly.append(
+                ForecastHourlyData(
+                    datetime=hour_time,
+                    temperature=row.get("temp"),
+                    apparent_temperature=row.get("feelslike"),
+                    condition=row.get("conditions"),
+                    cloud_cover=row.get("cloudcover"),
+                    icon=row.get("icon"),
+                    dew_point=row.get("dew"),
+                    humidity=row.get("humidity"),
+                    precipitation=row.get("precip"),
+                    precipitation_probability=row.get("precipprob"),
+                    pressure=row.get("pressure"),
+                    wind_bearing=row.get("winddir"),
+                    wind_gust_speed=row.get("windgust"),
+                    wind_speed=row.get("windspeed"),
+                    uv_index=row.get("uvindex"),
+                    snow=row.get("snow"),
+                    snow_depth=row.get("snowdepth"),
+                    precipitation_type=row.get("preciptype"),
+                    solarradiation=row.get("solarradiation"),
+                    solarenergy=row.get("solarenergy"),
+                    severe_risk=row.get("severerisk"),
+                    visibility=row.get("visibility"),
                 )
-                forecast_hourly.append(hour_data)
+            )
 
     weather_data.forecast_daily = forecast_daily
     weather_data.forecast_hourly = forecast_hourly
@@ -343,70 +308,35 @@ def _fetch_data(api_result: dict[str, Any] | None) -> ForecastData | None:
     return weather_data
 
 
-# pylint: disable=R0914, R0912, W0212, R0915
 def _get_current_data(api_result: dict[str, Any]) -> ForecastData:
-    """Return WeatherFlowForecast list from API."""
-
+    """Return the current conditions from the API result."""
     item = api_result["currentConditions"]
 
-    day_str = datetime.datetime.today().strftime(DATE_FORMAT)
-    hour = item["datetime"]
-    day_hour_obj = datetime.datetime.strptime(
-        f"{day_str} {hour}", DATE_TIME_FORMAT
-    ).astimezone(timezone.utc)
-    condition = item.get("conditions", None)
-    cloudcover = item.get("cloudcover", None)
-    icon = item.get("icon", None)
-    temperature = item.get("temp", None)
-    dew_point = item.get("dew", None)
-    apparent_temperature = item.get("feelslike", None)
-    precipitation = item.get("precip", None)
-    precipitation_probability = item.get("precipprob", None)
-    precipitation_type = item.get("preciptype", None)
-    humidity = item.get("humidity", None)
-    solarradiation = item.get("solarradiation", None)
-    solarenergy = item.get("solarenergy", None)
-    visibility = item.get("visibility", None)
-    pressure = item.get("pressure", None)
-    uv_index = item.get("uvindex", None)
-    wind_speed = item.get("windspeed", None)
-    wind_gust_speed = item.get("windgust", None)
-    wind_bearing = item.get("winddir", None)
-    snow = item.get("snow", None)
-    snow_depth = item.get("snowdepth", None)
-    sunrise = item.get("sunrise", None)
-    sunset = item.get("sunset", None)
-    moon_phase = item.get("moonphase", None)
-    location = api_result.get("address", "")
-    description = api_result.get("description", "")
-
-    current_condition = ForecastData(
-        datetime=day_hour_obj,
-        apparent_temperature=apparent_temperature,
-        condition=condition,
-        cloud_cover=cloudcover,
-        dew_point=dew_point,
-        humidity=humidity,
-        icon=icon,
-        precipitation=precipitation,
-        precipitation_probability=precipitation_probability,
-        pressure=pressure,
-        solarradiation=solarradiation,
-        temperature=temperature,
-        visibility=visibility,
-        uv_index=uv_index,
-        wind_bearing=wind_bearing,
-        wind_gust_speed=wind_gust_speed,
-        wind_speed=wind_speed,
-        location_name=location,
-        description=description,
-        snow=snow,
-        snow_depth=snow_depth,
-        precipitation_type=precipitation_type,
-        solarenergy=solarenergy,
-        sunrise=sunrise,
-        sunset=sunset,
-        moon_phase=moon_phase,
+    return ForecastData(
+        datetime=_to_datetime(item),
+        apparent_temperature=item.get("feelslike"),
+        condition=item.get("conditions"),
+        cloud_cover=item.get("cloudcover"),
+        dew_point=item.get("dew"),
+        humidity=item.get("humidity"),
+        icon=item.get("icon"),
+        precipitation=item.get("precip"),
+        precipitation_probability=item.get("precipprob"),
+        pressure=item.get("pressure"),
+        solarradiation=item.get("solarradiation"),
+        temperature=item.get("temp"),
+        visibility=item.get("visibility"),
+        uv_index=item.get("uvindex"),
+        wind_bearing=item.get("winddir"),
+        wind_gust_speed=item.get("windgust"),
+        wind_speed=item.get("windspeed"),
+        location_name=api_result.get("address", ""),
+        description=api_result.get("description", ""),
+        snow=item.get("snow"),
+        snow_depth=item.get("snowdepth"),
+        precipitation_type=item.get("preciptype"),
+        solarenergy=item.get("solarenergy"),
+        sunrise=item.get("sunrise"),
+        sunset=item.get("sunset"),
+        moon_phase=item.get("moonphase"),
     )
-
-    return current_condition

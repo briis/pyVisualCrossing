@@ -3,13 +3,10 @@
 	"name": "pyVisualCrossing",
 	"image": "mcr.microsoft.com/devcontainers/base:debian",
 	"containerEnv": {
-		"TZ": "Europe/Copenhagen"
+		"TZ": "Europe/Copenhagen",
+		"GIT_EDITOR": "code --wait"
 	},
 	"postCreateCommand": "python3 -m pip install -r requirements.txt",
-	"runArgs": [
-		"-e",
-		"GIT_EDTIOR='code --wait'"
-	],
     "customizations": {
         "vscode": {
             "extensions": [
